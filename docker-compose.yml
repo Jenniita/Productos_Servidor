@@ -1,0 +1,94 @@
+services:
+
+  # ─────────────────────────────────────────
+  # BASE DE DATOS — PostgreSQL
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: tienda_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5432:5432"             # accesible desde tu maquina en localhost:5432
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data   # datos persistentes
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql  # crea tablas al arrancar
+    networks:
+      - tienda_net
+
+  # ─────────────────────────────────────────
+  # INTERFAZ GRAFICA — pgAdmin
+  # ─────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tienda_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASS}
+    ports:
+      - "8080:80"               # abre http://localhost:8080 en el navegador
+    volumes:
+      - ./volumes/pgadmin:/var/lib/pgadmin  # configuracion persistente
+    depends_on:
+      - postgres
+    networks:
+      - tienda_net
+
+  # ─────────────────────────────────────────
+  # SERVIDOR NODE.JS + EJS
+  # ─────────────────────────────────────────
+  node:
+    build:
+      context: ./node           # usa el Dockerfile que esta en la carpeta node/
+    container_name: tienda_node
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres         # nombre del servicio postgres en la red Docker
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      PORT: 3000
+    ports:
+      - "3000:3000"             # abre http://localhost:3000 en el navegador
+    volumes:
+      - ./node:/app             # monta el codigo en vivo (cambios sin rebuild)
+      - /app/node_modules       # excepcion: node_modules viene del contenedor
+    depends_on:
+      - postgres
+    networks:
+      - tienda_net
+
+  # ─────────────────────────────────────────
+  # SERVIDOR PHP 8.3 + Apache
+  # ─────────────────────────────────────────
+  php:
+    build:
+      context: ./php            # usa el Dockerfile que esta en la carpeta php/
+    container_name: tienda_php
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+    ports:
+      - "8000:80"               # abre http://localhost:8000 en el navegador
+    volumes:
+      - ./php:/var/www/html     # monta el codigo en vivo (cambios sin rebuild)
+    depends_on:
+      - postgres
+    networks:
+      - tienda_net
+
+# ─────────────────────────────────────────
+# RED INTERNA compartida por todos los servicios
+# ─────────────────────────────────────────
+networks:
+  tienda_net:
+    driver: bridge

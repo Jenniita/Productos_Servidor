@@ -1,0 +1,16 @@
+<%- include("partials/cabecera") %>
+
+<h2>Todos los productos</h2>
+
+<div class="grid">
+<% productos.forEach(function(p) { %>
+    <div class="tarjeta">
+        <h3><%= p.nombre %></h3>
+        <p class="precio"><%= p.precio %> &euro;</p>
+        <p class="stock">Stock: <%= p.stock %></p>
+        <a href="/producto/<%= p.id %>">Ver detalle</a>
+    </div>
+<% }) %>
+</div>
+
+<%- include("partials/pie") %>

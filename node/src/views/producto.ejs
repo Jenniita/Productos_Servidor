@@ -1,0 +1,11 @@
+<%- include("partials/cabecera") %>
+
+<div class="detalle">
+    <h2><%= producto.nombre %></h2>
+    <p class="precio"><%= producto.precio %> &euro;</p>
+    <p class="stock">Stock disponible: <%= producto.stock %></p>
+    <p class="categoria">Categoria: <%= producto.categoria %></p>
+    <a href="/">Volver al listado</a>
+</div>
+
+<%- include("partials/pie") %>
